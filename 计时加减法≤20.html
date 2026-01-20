@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加减法练习</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans SC', Arial, sans-serif; /* 免费开源字体：思源黑体 */
+        }
+
+        /* 页面背景和整体布局 */
+        body {
+            background-color: #333333; /* 深灰色背景 */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* 计算式显示区域 - 禁止换行 + 确保行内元素对齐 */
+        .calculation-area {
+            margin-bottom: 80px;
+            text-align: center;
+            color: #ffffff; /* 白色文字 */
+            white-space: nowrap; /* 核心：避免计算式换行 */
+            display: inline-block; /* 配合nowrap生效 */
+        }
+
+        /* 数字样式：高度调整为400px */
+        .num {
+            font-size: 400px;
+            line-height: 1; /* 消除行高带来的额外间距 */
+            font-weight: bold;
+            vertical-align: middle; /* 核心：让数字作为对齐基准 */
+        }
+
+        /* 运算符号和等号样式：适配400px数字的尺寸 + 中线对齐 */
+        .operator, .equal {
+            font-size: 300px;
+            line-height: 1;
+            margin: 0 40px;
+            font-weight: bold;
+            vertical-align: middle; /* 核心：与数字中线对齐 */
+        }
+
+        /* 答案区域（初始隐藏） */
+        .answer {
+            font-size: 400px;
+            line-height: 1;
+            font-weight: bold;
+            display: none; /* 默认隐藏答案 */
+            vertical-align: middle; /* 核心：与数字中线对齐 */
+        }
+
+        /* 按钮组布局 */
+        .btn-group {
+            display: flex;
+            gap: 100px; /* 按钮之间的间距 */
+            margin-bottom: 20px; /* 缩小间距，给计时器留位置 */
+        }
+
+        /* 圆形按钮通用样式：直径200px + 文字居中 + 点击反馈 */
+        .action-btn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%; /* 圆形 */
+            border: none;
+            font-size: 90px;
+            font-weight: bold;
+            cursor: pointer;
+            /* 扩展transition：包含transform和background-color，让反馈更顺滑 */
+            transition: opacity 0.2s ease, transform 0.1s ease, background-color 0.1s ease;
+            /* 核心：让Q/A完全居中 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0; /* 清除默认内边距，避免文字偏移 */
+            /* 禁止文字选中，提升体验 */
+            user-select: none;
+        }
+
+        /* Q按钮：橙色 */
+        .q-btn {
+            background-color: #ff7f24;
+            color: #ffffff;
+        }
+
+        /* A按钮：蓝色 */
+        .a-btn {
+            background-color: #1e90ff;
+            color: #ffffff;
+        }
+
+        /* 按钮hover效果 */
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* 按钮点击反馈（active状态） */
+        .action-btn:active {
+            transform: scale(0.95); /* 点击时轻微缩小，模拟按压 */
+            opacity: 1; /* 恢复不透明度 */
+        }
+
+        /* Q按钮点击时颜色加深 */
+        .q-btn:active {
+            background-color: #e67018;
+        }
+
+        /* A按钮点击时颜色加深 */
+        .a-btn:active {
+            background-color: #187bcd;
+        }
+
+        /* 计时器显示样式 - 核心修改：字高扩大一倍 */
+        .timer-display {
+            color: #ffffff; /* 白色文字，和计算式统一 */
+            font-size: 40px; /* 原20px → 40px，字高扩大一倍 */
+            margin-bottom: 50px; /* 和访问量保持间距 */
+            font-weight: bold;
+            letter-spacing: 2px; /* 增加间距，提升可读性 */
+        }
+
+        /* 访问量统计区域 */
+        .visit-count {
+            color: #999999; /* 灰色小字 */
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 花朵图标 */
+        .flower-icon {
+            font-size: 30px;
+        }
+
+        /* 响应式适配：屏幕过小时缩小尺寸（避免溢出） */
+        @media (max-width: 1600px) {
+            .num, .answer {
+                font-size: 200px;
+            }
+            .operator, .equal {
+                font-size: 150px;
+                margin: 0 20px;
+                vertical-align: middle; /* 响应式下也保持中线对齐 */
+            }
+            .action-btn {
+                width: 100px;
+                height: 100px;
+                font-size: 45px;
+                /* 保持文字居中 */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .btn-group {
+                gap: 50px;
+            }
+            .timer-display {
+                font-size: 32px; /* 原16px → 32px，响应式下也扩大一倍 */
+            }
+        }
+    </style>
+    <!-- 引入免费开源的思源黑体（确保字体兼容性） -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 计算式显示区域 -->
+    <div class="calculation-area">
+        <span class="num num1">0</span>
+        <span class="operator">+</span>
+        <span class="num num2">0</span>
+        <span class="equal">=</span>
+        <span class="answer">0</span>
+    </div>
+
+    <!-- 功能按钮组 -->
+    <div class="btn-group">
+        <button class="action-btn q-btn">Q</button>
+        <button class="action-btn a-btn">A</button>
+    </div>
+
+    <!-- 计时器显示区域 -->
+    <div class="timer-display">00:000</div>
+
+    <!-- 访问量统计区域 -->
+    <div class="visit-count">
+        <span class="flower-icon">🌸</span>
+        <span class="count-num">0</span>
+    </div>
+
+    <script>
+        // ========== 1. 初始化元素 ==========
+        const num1El = document.querySelector('.num1');
+        const num2El = document.querySelector('.num2');
+        const operatorEl = document.querySelector('.operator');
+        const answerEl = document.querySelector('.answer');
+        const qBtn = document.querySelector('.q-btn');
+        const aBtn = document.querySelector('.a-btn');
+        const countNumEl = document.querySelector('.count-num');
+        const timerDisplay = document.querySelector('.timer-display'); // 计时器元素
+
+        // 当前题目信息
+        let currentQuestion = {
+            num1: 0,
+            num2: 0,
+            operator: '+',
+            answer: 0
+        };
+
+        // ========== 2. 计时相关变量 ==========
+        let timer = null; // 计时定时器（requestAnimationFrame）
+        let timeoutTimer = null; // 10秒超时定时器
+        let startTime = 0; // 开始计时的时间戳
+        let isTiming = false; // 是否正在计时
+
+        // ========== 3. 生成题库 ==========
+        function generateQuestionBank() {
+            const bank = [];
+
+            // 加法题：1~10之间任选两个数字
+            for (let i = 1; i <= 10; i++) {
+                for (let j = 1; j <= 10; j++) {
+                    bank.push({
+                        num1: i,
+                        num2: j,
+                        operator: '+',
+                        answer: i + j
+                    });
+                }
+            }
+
+            // 减法题：20~1之间任选两个数字，排除答案为负值的情况
+            for (let i = 1; i <= 20; i++) {
+                for (let j = 1; j <= 20; j++) {
+                    if (i >= j) { // 确保答案非负
+                        bank.push({
+                            num1: i,
+                            num2: j,
+                            operator: '-',
+                            answer: i - j
+                        });
+                    }
+                }
+            }
+
+            return bank;
+        }
+
+        // 初始化题库
+        const questionBank = generateQuestionBank();
+
+        // ========== 4. 计时相关函数 ==========
+        /**
+         * 格式化时间为 00:000 格式（秒:毫秒）
+         * @param {number} ms 总毫秒数
+         * @returns {string} 格式化后的时间字符串
+         */
+        function formatTime(ms) {
+            // 计算秒数（取整）和毫秒数（取余）
+            const seconds = Math.floor(ms / 1000).toString().padStart(2, '0');
+            const milliseconds = (ms % 1000).toString().padStart(3, '0');
+            return `${seconds}:${milliseconds}`;
+        }
+
+        /**
+         * 更新计时器显示
+         */
+        function updateTimer() {
+            if (!isTiming) return;
+            // 计算已过时间（毫秒）
+            const elapsedTime = Date.now() - startTime;
+            // 格式化并更新显示
+            timerDisplay.textContent = formatTime(elapsedTime);
+            // 使用requestAnimationFrame保证计时流畅（比setInterval更精准）
+            timer = requestAnimationFrame(updateTimer);
+        }
+
+        /**
+         * 停止计时
+         */
+        function stopTimer() {
+            isTiming = false;
+            // 清除计时定时器
+            if (timer) {
+                cancelAnimationFrame(timer);
+                timer = null;
+            }
+            // 清除10秒超时定时器
+            if (timeoutTimer) {
+                clearTimeout(timeoutTimer);
+                timeoutTimer = null;
+            }
+        }
+
+        /**
+         * 重置计时器（恢复初始显示）
+         */
+        function resetTimer() {
+            stopTimer();
+            timerDisplay.textContent = '00:000';
+        }
+
+        // ========== 5. 随机选题功能 ==========
+        function randomSelectQuestion() {
+            // 1. 重置计时器
+            resetTimer();
+            // 2. 随机选题，隐藏答案
+            const randomIndex = Math.floor(Math.random() * questionBank.length);
+            currentQuestion = questionBank[randomIndex];
+            num1El.textContent = currentQuestion.num1;
+            num2El.textContent = currentQuestion.num2;
+            operatorEl.textContent = currentQuestion.operator;
+            answerEl.style.display = 'none';
+            // 3. 启动计时
+            startTime = Date.now();
+            isTiming = true;
+            updateTimer();
+            // 4. 设置10秒超时定时器：超时自动显示答案
+            timeoutTimer = setTimeout(() => {
+                showAnswer(); // 等效点击A按钮
+                stopTimer(); // 停止计时
+            }, 10000); // 10秒 = 10000毫秒
+        }
+
+        // ========== 6. 显示答案功能 ==========
+        function showAnswer() {
+            answerEl.textContent = currentQuestion.answer;
+            answerEl.style.display = 'inline';
+            answerEl.style.verticalAlign = 'middle';
+            // 停止计时
+            stopTimer();
+        }
+
+        // ========== 7. 访问量统计 ==========
+        function initVisitCount() {
+            // 从localStorage读取访问量，没有则初始化为0
+            let count = localStorage.getItem('visitCount') || 0;
+            count = Number(count) + 1; // 每次访问+1
+            localStorage.setItem('visitCount', count); // 保存到本地
+            countNumEl.textContent = count; // 更新页面显示
+        }
+
+        // ========== 8. 绑定事件 ==========
+        // Q按钮：随机选题 + 启动计时
+        qBtn.addEventListener('click', randomSelectQuestion);
+        // A按钮：显示答案 + 停止计时
+        aBtn.addEventListener('click', showAnswer);
+
+        // ========== 9. 初始化 ==========
+        initVisitCount(); // 初始化访问量
+        randomSelectQuestion(); // 页面加载时随机显示一个题目
+    </script>
+</body>
+</html>
